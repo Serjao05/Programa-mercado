@@ -1,3 +1,6 @@
+const digite = require("prompt-sync")();
+const { Client } = require("pg");
+
 let id = 0;
 
 function genID() {
@@ -6,40 +9,24 @@ function genID() {
   return id;
 }
 
-const digite = require("prompt-sync")();
-
-let vendas = [
-  {
-    id: 0,
-    usuarioId: 0,
-    produtoId: 42,
-    quantidade: 0,
-    dataCompra: new Date(),
-  },
-];
-
-let produtos = [
-  {
-    id: 0,
-    nome: "gol",
-    valor: 42.1,
-    estoque: 8,
-    ano: 1998,
-  },
-];
-
-let pessoas = [
-  {
-    id: 0,
-    nome: "tiao",
-    endereco: "rua: don pedro n10",
-    cidade: "lagoa grande",
-  },
-];
 let option;
 
-do {
-  console.log(`
+async function main() {
+  const client = new Client({
+    host: "localhost",
+    port: 5432,
+    user: "postgres",
+    password: "admin",
+    database: "Estudo",
+  });
+
+  await client.connect();
+
+  // let qualquer = await client.query("select 1;");
+  // console.log(qualquer);
+
+  do {
+    console.log(`
       ===== SISTEMA DE COMPRAS =====
       1. Gerenciar produtos
       2. Gerenciar usuários
@@ -50,14 +37,14 @@ do {
       Escolha uma opção:
         `);
 
-  option = digite("Digite uma opção ");
+    option = digite("Digite uma opção ");
 
-  // ###### PRODUTOS ######
-  if (option == 1) {
-    let optionProdutos;
+    // ###### PRODUTOS ######
+    if (option == 1) {
+      let optionProdutos;
 
-    do {
-      console.log(`
+      do {
+        console.log(`
         ### MENU SISTEMA PRODUTO ###
         1.Adicionar
         2.Listar
@@ -65,149 +52,164 @@ do {
         4.Estocar
         9.Sair
         `);
-      optionProdutos = digite("Digite uma opção ");
 
-      if (optionProdutos == 1) {
-        let nome = digite("Digite o nome ");
-        let valor = digite("Digite o Valor ");
-        let estoque = digite("Digite a Quantidade ");
-        let ano = digite("Digite o ano ");
+        optionProdutos = digite("Digite uma opção ");
 
-        produtos.push({
-          id: genID(),
-          nome: nome,
-          valor: Number(valor),
-          estoque: Number(estoque),
-          ano: Number(ano),
-        });
-      }
+        if (optionProdutos == 1) {
+          let nome = digite("Digite o Nome ");
+          let preco = digite("Digite o Preco ");
+          let estoque = digite("Digite a Quantidade ");
 
-      if (optionProdutos == 2) {
-        console.log(produtos);
-      }
+          const query = `
+          INSERT INTO produtos (nome, preco, estoque)
+          VALUES ($1, $2, $3);
+            `;
 
-      if (optionProdutos == 3) {
-        let id = digite("Digite o id do produto para remover ");
-        const index = produtos.findIndex((obj) => obj.id == id);
-
-        if (index !== -1) {
-          produtos.splice(index, 1);
+          await client.query(query, [nome, Number(preco), Number(estoque)]);
         }
-      }
-      if (optionProdutos == 4) {
-        let idProduto = digite("Digite o ID do produto que deseja estocar: ");
-        const produto = produtos.find((obj) => obj.id == idProduto);
 
-        if (produto) {
+        if (optionProdutos == 2) {
+          const query = `
+          select * from produtos 
+            `;
+
+          const resultado = await client.query(query);
+          console.log(resultado.rows);
+        }
+
+        if (optionProdutos == 3) {
+          let id = digite("Digite o id do produto para remover ");
+          const query = `
+          DELETE FROM produtos
+          WHERE id = $1;
+          `;
+
+          await client.query(query, [id]);
+        }
+        if (optionProdutos == 4) {
+          let idProduto = digite("Digite o ID do produto que deseja estocar: ");
+
           let quantidadeAdicional = digite(
             "Quantas unidades deseja adicionar ao estoque? "
           );
-          quantidadeAdicional = Number(quantidadeAdicional);
-          produto.estoque += quantidadeAdicional;
+
+          const query = `
+  UPDATE produtos
+  SET quantidade = quantidade + $1
+  WHERE id = $2;
+`;
+
+          await client.query(query, [
+            Number(quantidadeAdicional),
+            Number(idProduto),
+          ]);
         }
-      }
-    } while (optionProdutos != 9);
-  }
+      } while (optionProdutos != 9);
+    }
 
-  if (option == 2) {
-    let optionPessoas;
+    if (option == 2) {
+      let optionUsuarios;
 
-    do {
-      console.log(`
-            ### MENU SISTEMA DE PESSOAS ###
+      do {
+        console.log(`
+            ### MENU SISTEMA DE USUARIOS ###
             1.Adicionar
             2.Listar
             3.Remover
             9.Sair
             `);
-      optionPessoas = digite("Digite uma opção ");
+        optionUsuarios = digite("Digite uma opção ");
 
-      if (optionPessoas == 1) {
-        let nome = digite("Digite o Nome ");
-        let endereco = digite("Digite o Endereço ");
-        let cidade = digite("Digite a Cidade ");
+        if (optionUsuarios == 1) {
+          let nome = digite("Digite o Nome ");
+          let email = digite("Digite o Email ");
 
-        pessoas.push({
-          id: genID(),
-          nome: nome,
-          endereco: endereco,
-          cidade: cidade,
-        });
-      }
+          const query = `
+          INSERT INTO usuarios (nome, email)
+          VALUES ($1, $2);
+            `;
 
-      if (optionPessoas == 2) {
-        console.log(pessoas);
-      }
-
-      if (optionPessoas == 3) {
-        let id = digite("Digite o id da pessoa para remover");
-        const index = pessoas.findIndex((obj) => obj.id == id);
-
-        if (index !== -1) {
-          pessoas.splice(index, 1);
+          await client.query(query, [nome, email]);
         }
+
+        if (optionUsuarios == 2) {
+          const query = `
+          select * from usuarios 
+            `;
+
+          const resultado = await client.query(query);
+          console.log(resultado.rows);
+        }
+
+        if (optionUsuarios == 3) {
+          let id = digite("Digite o id da pessoa para remover: ");
+          const index = usuarios.findIndex((obj) => obj.id == id);
+
+          if (index !== -1) {
+            usuarios.splice(index, 1);
+          }
+        }
+      } while (optionUsuarios != 9);
+    }
+
+    if (option == 3) {
+      console.log("### REALIZAR COMPRA ###");
+
+      let usuarioId = Number(
+        digite("Digite o ID do usuário que está comprando: ")
+      );
+      let produtoId = Number(digite("Digite o ID do produto a ser comprado: "));
+      let quantidade = Number(digite("Digite a quantidade desejada: "));
+
+      const usuario = usuarios.find((u) => u.id === usuarioId);
+      if (!usuario) {
+        console.log("Usuário não encontrado.");
+        continue;
       }
-    } while (optionPessoas != 9);
-  }
 
-  if (option == 3) {
-    console.log("### REALIZAR COMPRA ###");
+      const produto = produtos.find((p) => p.id === produtoId);
+      if (!produto) {
+        console.log("Produto não encontrado.");
+        continue;
+      }
 
-    let usuarioId = Number(
-      digite("Digite o ID do usuário que está comprando: ")
-    );
-    let produtoId = Number(digite("Digite o ID do produto a ser comprado: "));
-    let quantidade = Number(digite("Digite a quantidade desejada: "));
+      if (produto.estoque < quantidade) {
+        console.log("Estoque insuficiente.");
+        continue;
+      }
 
-    const usuario = pessoas.find((u) => u.id === usuarioId);
-    if (!usuario) {
-      console.log("Usuário não encontrado.");
-      continue;
+      produto.estoque -= quantidade;
+
+      vendas.push({
+        id: genID(),
+        usuarioId: usuarioId,
+        produtoId: produtoId,
+        quantidade: quantidade,
+        dataCompra: new Date(),
+      });
+
+      console.log("Compra realizada com sucesso!");
     }
 
-    const produto = produtos.find((p) => p.id === produtoId);
-    if (!produto) {
-      console.log("Produto não encontrado.");
-      continue;
-    }
+    if (option == 4) {
+      console.log("### LISTAR COMPRAS DO MÊS ###");
 
-    if (produto.estoque < quantidade) {
-      console.log("Estoque insuficiente.");
-      continue;
-    }
+      const hoje = new Date();
+      const mesAtual = hoje.getMonth();
+      const anoAtual = hoje.getFullYear();
 
-    produto.estoque -= quantidade;
+      const comprasDoMes = vendas.filter((venda) => {
+        const data = new Date(venda.dataCompra);
+        return data.getMonth() === mesAtual && data.getFullYear() === anoAtual;
+      });
 
-    vendas.push({
-      id: genID(),
-      usuarioId: usuarioId,
-      produtoId: produtoId,
-      quantidade: quantidade,
-      dataCompra: new Date(),
-    });
-
-    console.log("Compra realizada com sucesso!");
-  }
-
-  if (option == 4) {
-    console.log("### LISTAR COMPRAS DO MÊS ###");
-
-    const hoje = new Date();
-    const mesAtual = hoje.getMonth();
-    const anoAtual = hoje.getFullYear();
-
-    const comprasDoMes = vendas.filter((venda) => {
-      const data = new Date(venda.dataCompra);
-      return data.getMonth() === mesAtual && data.getFullYear() === anoAtual;
-    });
-
-    if (comprasDoMes.length === 0) {
-      console.log("Nenhuma compra realizada neste mês.");
-    } else {
-      comprasDoMes.forEach((venda) => {
-        const usuario = pessoas.find((p) => p.id === venda.usuarioId);
-        const produto = produtos.find((p) => p.id === venda.produtoId);
-        console.log(`
+      if (comprasDoMes.length === 0) {
+        console.log("Nenhuma compra realizada neste mês.");
+      } else {
+        comprasDoMes.forEach((venda) => {
+          const usuario = usuarios.find((p) => p.id === venda.usuarioId);
+          const produto = produtos.find((p) => p.id === venda.produtoId);
+          console.log(`
 Compra ID: ${venda.id}
 Cliente: ${usuario ? usuario.nome : "Desconhecido"}
 Produto: ${produto ? produto.nome : "Desconhecido"}
@@ -215,8 +217,11 @@ Quantidade: ${venda.quantidade}
 Valor Total: R$
   
           `);
-      });
+        });
+      }
+      while (option != 9);
     }
-    while (option != 9);
-  }
-} while (option != 9);
+  } while (option != 9);
+  client.end();
+}
+main();
