@@ -113,16 +113,16 @@ async function main() {
       do {
         console.log(`
             ### MENU SISTEMA DE USUARIOS ###
-            1.Adicionar
-            2.Listar
+            1.Adicionar Usuarios
+            2.Listar Usuarios
             3.Remover
             9.Sair
             `);
         optionUsuarios = digite("Digite uma opção ");
 
         if (optionUsuarios == 1) {
-          let nome = digite("Digite o Nome ");
-          let email = digite("Digite o Email ");
+          let nome = digite("Digite o Nome do Usuario: ");
+          let email = digite("Digite o Email do Usuario: ");
 
           const query = `
           INSERT INTO usuarios (nome, email)
@@ -142,12 +142,14 @@ async function main() {
         }
 
         if (optionUsuarios == 3) {
-          let id = digite("Digite o id da pessoa para remover: ");
-          const index = usuarios.findIndex((obj) => obj.id == id);
+          let idParaRemover = digite("Digite o id do Usuario para remover: ");
+          idParaRemover = Number(idParaRemover);
 
-          if (index !== -1) {
-            usuarios.splice(index, 1);
-          }
+          let query = `
+         DELETE FROM usuarios
+         WHERE id = $1`;
+
+          await client.query(query, [idParaRemover]);
         }
       } while (optionUsuarios != 9);
     }
@@ -161,34 +163,29 @@ async function main() {
       let produtoId = Number(digite("Digite o ID do produto a ser comprado: "));
       let quantidade = Number(digite("Digite a quantidade desejada: "));
 
-      const usuario = usuarios.find((u) => u.id === usuarioId);
-      if (!usuario) {
-        console.log("Usuário não encontrado.");
-        continue;
+      let queryProduto = `
+      UPDATE produtos
+      SET estoque = estoque - $1
+      WHERE id = $2 AND $1 <= estoque;  
+      RETURNIG id;
+      `;
+
+      const resultadoProduto = client.query(queryProduto, [
+        quantidade,
+        idProduto,
+      ]);
+
+      if (resultadoProduto.rowCount == 0) {
+        console.log("Erro ao realiza compra");
+        return;
       }
 
-      const produto = produtos.find((p) => p.id === produtoId);
-      if (!produto) {
-        console.log("Produto não encontrado.");
-        continue;
-      }
+      let query = `
+      INSERT INTO vendas (usuario_id, produto_id, quantidade)
+      VALUES ($1, $2, $3)
+      `;
 
-      if (produto.estoque < quantidade) {
-        console.log("Estoque insuficiente.");
-        continue;
-      }
-
-      produto.estoque -= quantidade;
-
-      vendas.push({
-        id: genID(),
-        usuarioId: usuarioId,
-        produtoId: produtoId,
-        quantidade: quantidade,
-        dataCompra: new Date(),
-      });
-
-      console.log("Compra realizada com sucesso!");
+      await client.query(query, [usuarioId, produtoId, quantidade]);
     }
 
     if (option == 4) {
