@@ -8,9 +8,19 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "description": "",
   "dependencies": {
+    "bcrypt": "^6.0.0",
     "pg": "^8.16.0",
     "prompt-sync": "^4.2.0"
-  }
+  },
+  "devDependencies": {},
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Serjao05/Programa-mercado.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Serjao05/Programa-mercado/issues"
+  },
+  "homepage": "https://github.com/Serjao05/Programa-mercado#readme",
+  "description": ""
 }
